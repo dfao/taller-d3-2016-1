@@ -1,0 +1,39 @@
+<!doctype html>
+
+<html>
+    <head>
+        <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    </head>
+    <body>
+<script>
+    // Tamaño del lienzo
+    var width = 400;
+    var height = 300;
+
+    var datos = [1,2,3];
+    
+    //Generamos el SVG
+    var svg = d3.select('body').append('svg')
+    .attr('height', height)
+    .attr('width', width);
+    
+    //rango
+    var radio = d3.scale.linear()
+    .domain([d3.min(datos), d3.max(datos)])
+    .range([10, 30]);
+    
+    //escala colores 
+    var color = d3.scale.category10();
+
+    //agregamos los círculos
+    var circulos = svg.selectAll('circle')
+    .data(datos).enter()
+    .append('circle')
+    .attr('fill', d=>color(d))
+    .attr('r', d=>radio(d))
+    .attr('cx', (d,i)=> i*50+50)
+    .attr('cy', height/2);
+
+</script>
+    </body>
+</html>

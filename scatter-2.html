@@ -1,0 +1,56 @@
+<!doctype html>
+
+<html>
+    <head>
+        <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    </head>
+    <body>
+<script>
+    //tamaño del lienzo SVG
+    var margin = {top: 20, right: 20, bottom: 30, left: 40},
+        width = 600 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    //Generamos el lienzo svg
+    var svg = d3.select('body').append('svg')
+      .attr('height', height+margin.top+margin.bottom)
+      .attr('width', width+margin.left+margin.right)
+    .append('g')
+      .attr('height', height)
+      .attr('width', width)
+      .style('transform', 'translate('+margin.top+','+margin.left+')');
+
+    //leemos el CSV
+    d3.csv('data/data.csv',readCsv, function(err,data){
+      console.log(data);
+
+      //escala X
+      var x = d3.scale.linear()
+      .domain([d3.min(data,d=>d.x)-1, d3.max(data,d=>d.x)+1])
+      .range([0,width]);
+
+      //escala Y
+      var y = d3.scale.linear()
+      .domain([d3.min(data,d=>d.y-1), d3.max(data,d=>d.y)+1])
+      .range([height,0]);
+
+      var circles = svg.selectAll('circle').data(data);
+      circles.enter().append('circle')
+        .attr('r',5)
+        .attr('cx', width/2)
+        .attr('cy', height/2)
+      .transition()
+        .delay(1500)
+        .attr('cx', d=>x(d.x))
+        .attr('cy', d=>y(d.y));
+
+    });
+    //pasa a números
+    function readCsv(d){
+      return {x:+d.x,
+              y:+d.y}
+    }
+
+</script>
+    </body>
+</html>

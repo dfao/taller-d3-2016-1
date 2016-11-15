@@ -1,0 +1,26 @@
+<!doctype html>
+
+<html>
+    <head>
+        <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+    </head>
+    <body>
+<script>
+    //tamaño del lienzo SVG
+    var width = 400;
+    var height = 300;
+
+    var datos = [1,2,3];
+    //Generamos el lienzo svg
+    var svg = d3.select('body').append('svg')
+    .attr('height', height)
+    .attr('width', width);
+
+    //Agregamos círculos por cada dato
+    var circulos = svg.selectAll('circle')
+    .data(datos).enter()
+    .append('circle');
+
+</script>
+    </body>
+</html>
