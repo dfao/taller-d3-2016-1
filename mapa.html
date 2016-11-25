@@ -1,0 +1,122 @@
+<!doctype html>
+<html>
+    <head>
+        <script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+        <script src="plugins/topojson.js"></script>
+        <style>
+          body{font-family: sans-serif;font-size: 0.85em;padding:20px 40px;}
+          h1{text-align: center;margin-bottom: 50px;}
+          #map{float:left; margin-right: 40px;}
+          path{stroke:#444;stroke-width:0.5px;}
+        </style>
+    </head>
+    <body>
+      <h1>Mapa Coroplético</h1>
+      <div id="map"></div>
+      <section>
+        Hecho en base a:
+        <ul>
+          <li>
+            <a href="https://github.com/topojson/topojson" target="_blank">Plugin TopoJson</a>
+          </li>
+          <li>
+            <a href="https://github.com/d3/d3-plugins/tree/master/geo/tile" target="_blank">Plugin GeoTile</a>
+          </li>
+          <li>
+            Mosaicos basados en <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors.</a>
+          </li>
+        </ul>
+        Regiones coloreadas según datos de población a partir de los mapas obtenidos de la <a href="https://www.bcn.cl/siit/mapas_vectoriales/index_html" target="_black">Biblioteca Nacional del Congreso</a> y comprimidos a TopoJson mediante <a href="http://mapshaper.org/" target="_blank">MapShaper</a>.
+
+      </section>
+
+<script src="plugins/d3.geo.tile.js"></script>
+<script>
+    var width = 300;
+    var height = 600;
+
+    //Imagenes de fondo para el mapa, de Openstreemap
+    var tile = d3.geo.tile()
+        .size([width, height]);
+
+    //tipo de proyección del mapa - Mercator
+    var projection = d3.geo.mercator()
+        .scale((1 << 12) / 2 / Math.PI)
+        .translate([width / 2, height / 2]);
+    var center = projection([-75, -40]); //centro del mapa
+
+    var path = d3.geo.path()
+        .projection(projection);
+
+    //svg del mapa
+    var svg = d3.select('#map').append("svg")
+        .attr("width", width)
+        .attr("height", height);
+
+    var raster = svg.append("g"); //capa para los mapas de bits de fondo
+
+    d3.json('data/division_regional.json',function(err, data){
+        if (err) console.log(err);
+
+
+        //Descomprimir el TopoJson a GeoJson
+        var dataRegiones = topojson
+        .feature(data, data.objects.division_regional).features;
+
+        //usamos la población para una escala de color
+        var colorScale = d3.scale.linear()
+        .range(["#ffff8c","#d7191c"])
+        .domain([d3.min(dataRegiones, d=>d.properties.POBL2010)
+          ,d3.max(dataRegiones, d=>d.properties.POBL2010)]);
+
+        //comportamineto del zoom
+        var zoom = d3.behavior.zoom()
+                    .scale(projection.scale() * 2 * Math.PI)
+                    .scaleExtent([1 << 11, 1 << 16])//[1 << 11, 1 << 14]
+                    .translate([width - center[0], height - center[1]])
+                    .on("zoom", zoomed);
+
+        //se generan los polígonos de cada region
+        var regiones = svg.selectAll('path.region')
+                  .data(dataRegiones)
+                  .enter().append('path')
+                  .attr('class', 'region')
+                  .attr('fill', d=>colorScale(d.properties.POBL2010));
+
+        svg.call(zoom);
+
+        //funcion para manejar las imagenes de mapa de bits de fondo
+        function zoomed() {
+            var tiles = tile //mosaicos de imagen de fondo
+                .scale(zoom.scale())
+                .translate(zoom.translate())
+                ();
+
+            projection  //actualizacion de la proyeccion
+                .scale(zoom.scale() / 2 / Math.PI)
+                .translate(zoom.translate());
+
+            regiones.attr('d', path); //poligonos actualizados
+
+            //imagenes para el mosaico de fondo
+            var image = raster
+              .attr("transform", "scale(" + tiles.scale + ")translate(" + tiles.translate + ")")
+              .selectAll("image")
+              .data(tiles, function(d) { return d});
+
+            image.exit().remove();
+
+            image.enter().append("image")
+                .attr("xlink:href", function(d) { return "http://" + ["a", "b", "c"][Math.random() * 3 | 0] + ".tile.openstreetmap.org/" + d[2] + "/" + d[0] + "/" + d[1] + ".png"; })
+                .attr("width", 1)
+                .attr("height", 1)
+                .attr("x", function(d) { return d[0]; })
+                .attr("y", function(d) { return d[1]; });
+          };
+
+      zoomed();
+
+    });
+</script>
+    </body>
+</html>
